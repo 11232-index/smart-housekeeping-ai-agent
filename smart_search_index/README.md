@@ -21,7 +21,7 @@ server-id=1
 重建账号：
 
 ```sql
-CREATE USER 'debezium'@'%' IDENTIFIED BY 'debezium';
+CREATE USER 'debezium'@'%' IDENTIFIED BY 'your_debezium_password';
 GRANT SELECT, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT
   ON *.* TO 'debezium'@'%';
 FLUSH PRIVILEGES;
@@ -30,12 +30,14 @@ FLUSH PRIVILEGES;
 ## 2. 启动 Kafka
 
 ```powershell
-# KRaft 模式（Kafka 3.3+）
-cd C:\kafka
+# KRaft 模式（Kafka 3.3+，目录按自己的安装位置）
+cd <你的 Kafka 目录>
 bin\windows\kafka-storage.bat random-uuid        # 首次
-bin\windows\kafka-storage.bat format -t <uuid> -c config\kraft\server.properties
-bin\windows\kafka-server-start.bat config\kraft\server.properties
+bin\windows\kafka-storage.bat format -t <uuid> -c config\server.properties
+bin\windows\kafka-server-start.bat config\server.properties
 ```
+
+Kafka 3.x 的目录可能是 `config\kraft\server.properties`，按实际发行版选择。
 
 Windows 内存有限时在 `server.properties` 或启动脚本里设：
 
@@ -45,14 +47,14 @@ Windows 内存有限时在 `server.properties` 或启动脚本里设：
 
 ## 3. 启动 Debezium
 
-1. 下载 Debezium MySQL connector，解压到 `C:\debezium\plugin`
+1. 下载 Debezium MySQL connector（4.x），解压到 `<你的插件目录>`
 2. 复制本目录 `debezium/*.properties` 到 Kafka 的 `config\`
 3. 按实际路径修改 `plugin.path`、`offset.storage.file.filename`
 4. 确认 `topic.prefix=housekeeping` 与 `smart_search_index/config.py` 的
    `DEBEZIUM_TOPIC_PREFIX` 一致
 
 ```powershell
-cd C:\kafka
+cd <你的 Kafka 目录>
 bin\windows\connect-standalone.bat config\connect-standalone.properties config\connect-mysql-source.properties
 ```
 
@@ -67,7 +69,7 @@ curl http://127.0.0.1:8083/connectors/smart-housekeeping-connector/status
 ## 4. 启动消费者
 
 ```powershell
-cd "D:\桌面\smart-housekeeping-ai-agent"
+cd <项目根目录>
 python -m smart_search_index.consumer
 ```
 
@@ -117,7 +119,14 @@ python -m smart_search_index.reconcile --fix  # 补建缺失、删除多余
 - 仍失败写入 `smart_search.dlq`，日志保留原始消息
 - 消息处理成功后才提交 offset，重启不会丢
 
-## 9. 注意
+## 9. MySQL 8 兼容性
+
+- Debezium 连接 MySQL 8 默认的 `caching_sha2_password` 可能报 `Public Key Retrieval is not allowed`：
+  把 Debezium 账号改为 `mysql_native_password`，或在连接参数中允许公钥检索
+- 中文 Windows 的 MySQL 时区表可能不完整，连接报 `unrecognized time zone` 时，
+  connector 配置已提供 `database.connectionTimeZone=Asia/Shanghai`
+
+## 10. 注意
 
 - Qdrant point id 固定为 `UUID5(kind:record_id)`，建库和增量同步共用；
   从旧版本升级后建议先跑一次 `python -m smart_search.indexer --rebuild`

@@ -14,6 +14,7 @@ smart_search/
 ├── qdrant_store.py      # Qdrant 封装
 ├── rerank.py            # bge-reranker 精排
 ├── repository.py        # MySQL 只读查询 + 档期
+├── point_ids.py         # 固定 point id（kind:id → UUID5）
 ├── indexer.py           # 建库脚本
 ├── schemas.py           # API 模型
 └── app.py               # FastAPI :5001
@@ -24,8 +25,8 @@ smart_search/
 ## 启动顺序
 
 ```bash
-# 1. Qdrant（Windows 二进制）
-cd E:\qdrant\qdrant-x86_64-pc-windows-msvc
+# 1. Qdrant（Windows 二进制，目录按自己的安装位置）
+cd <你的 Qdrant 目录>
 qdrant.exe
 
 # 2. 建库（内容不变会复用 LLM 特征缓存）
@@ -61,15 +62,17 @@ curl -X POST http://127.0.0.1:5001/api/smart-search/search \
 
 入口：`pages/booking` → 搜索栏右侧「✨ 智能搜」。
 
-`pages/smart-search/smart-search.js` 中：
+页面在 `miniapp/pages/smart-search/`，地址不再写死，而是跟随 `app.js` 的 `aiBaseUrl` 自动把端口换成 5001：
 
 ```js
-var SMART_SEARCH_BASE_URL = 'http://127.0.0.1:5001';
+var _app = getApp();
+var AI_BASE = (_app && _app.globalData && _app.globalData.aiBaseUrl) || 'http://127.0.0.1:5000';
+var SMART_SEARCH_BASE_URL = AI_BASE.replace(/:\d+$/, ':5001');
 ```
 
-- 开发者工具：保持 `127.0.0.1`，并勾选“不校验合法域名”；
-- 真机预览：改成电脑当前局域网 IP，例如 `http://192.168.164.119:5001`；
-- 上线：通过 Nginx 暴露 HTTPS 域名，并加入小程序域名白名单。
+- 开发者工具：`aiBaseUrl` 为 `http://127.0.0.1:5000`，自动访问 5001；需勾选“不校验合法域名”
+- 真机预览：`aiBaseUrl` 改为电脑热点地址 `http://192.168.137.1:5000`，自动访问 `http://192.168.137.1:5001`；手机需连接电脑热点
+- 上线：通过 Nginx 暴露 HTTPS 域名，并加入小程序域名白名单
 
 ## 说明
 

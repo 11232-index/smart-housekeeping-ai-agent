@@ -1,7 +1,7 @@
 # 记忆服务启动说明（FastAPI + PostgreSQL + Redis）
 
 本方案用 **PostgresSaver** 保存 LangGraph 的 thread 状态，用 **Redis** 缓存用户画像/会话列表。
-不再需要 `langgraph dev` 和 Flask 的 5000 端口；FastAPI 直接占用 5000，小程序无需改地址。
+不再需要 `langgraph dev`；FastAPI 直接占用 5000，小程序无需改地址。
 
 ## 0. 目录与端口
 
@@ -10,7 +10,7 @@
 | PostgreSQL | 5432 | checkpointer + user_profile + thread_meta |
 | Redis | 6379 | 画像/会话列表缓存 |
 | Java 后端 | 8080 | 微信登录、业务接口 |
-| FastAPI 记忆服务 | 5000 | 替代原 Flask AI 服务 |
+| FastAPI 记忆服务 | 5000 | 客服 API + 记忆服务（小程序对接） |
 | 小程序开发者工具 | - | `aiBaseUrl` 仍为 `http://127.0.0.1:5000` |
 
 ## 1. 创建 Postgres 数据库和用户
@@ -72,7 +72,7 @@ pip install "langgraph-checkpoint-postgres==3.0.5" "psycopg[binary]" psycopg-poo
 用 IntelliJ 运行 `SmartApplication`，或：
 
 ```powershell
-cd "D:\桌面\后端初始工程\smart-housekeeping-system"
+cd "D:\桌面\后端初始工程\housekeeping-digital-platform"
 mvn -pl smart-server -am spring-boot:run
 ```
 
@@ -185,14 +185,14 @@ python -m server.cleanup --days 90
 | `Postgres 连接失败` | 检查 `POSTGRES_URI` 的用户/密码/库名，确认 5432 监听 |
 | `unknown command 'HELLO'` | 已通过 `protocol=2` 解决；不要改回默认协议 |
 | Redis 连接失败 | 确认 `redis-server.exe` 在跑，6379 监听 |
-| 5000 被占用 | 停掉 Flask，或把 FastAPI 换到其他端口并改小程序 `aiBaseUrl` |
+| 5000 被占用 | 停掉占用 5000 的进程，或换端口并同步修改小程序 `aiBaseUrl` |
 | token 解析不到 openid | Java 重新编译/重启，小程序重新登录 |
 | 回答里没有称呼 | 检查 `user_profile` 是否有记录，token 是否带 openid |
 | 重启后记忆丢失 | 检查 Postgres 是否有 `checkpoints` 表，FastAPI 是否真的用了 PostgresSaver |
 
 ## 10. 注意
 
-- FastAPI 现在占用 5000，**不要同时启动 Flask**；Flask 的 Web 聊天页暂时不用
+- FastAPI 占用 5000，不要同时运行其他服务占用该端口
 - `thread_meta` 是给小程序客服用的会话列表；Java 的 `chat_session` 是管理端 AI 助手的会话表，两者独立
 - `USER_JWT_SECRET` 与 Java `smart.jwt.user-secret-key` 必须一致
 - Redis 只是缓存，删掉 Redis 数据不影响对话记忆；对话记忆在 Postgres
