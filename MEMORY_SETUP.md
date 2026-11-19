@@ -194,5 +194,5 @@ python -m server.cleanup --days 90
 
 - FastAPI 现在占用 5000，**不要同时启动 Flask**；Flask 的 Web 聊天页暂时不用
 - `thread_meta` 是给小程序客服用的会话列表；Java 的 `chat_session` 是管理端 AI 助手的会话表，两者独立
-- `USER_JWT_SECRET` 与 Java `smart.jwt.user-secret-key` 必须一致（当前都是 `change-me-secret`）
+- `USER_JWT_SECRET` 与 Java `smart.jwt.user-secret-key` 必须一致
 - Redis 只是缓存，删掉 Redis 数据不影响对话记忆；对话记忆在 Postgres

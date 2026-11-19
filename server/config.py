@@ -22,7 +22,7 @@ PROFILE_CACHE_TTL = int(os.getenv("PROFILE_CACHE_TTL", "1800"))
 SESSION_CACHE_TTL = int(os.getenv("SESSION_CACHE_TTL", "60"))
 
 # 与 Java application.yml 的 smart.jwt.user-secret-key 保持一致
-USER_JWT_SECRET = os.getenv("USER_JWT_SECRET", "change-me-secret")
+USER_JWT_SECRET = os.getenv("USER_JWT_SECRET", "change-me-user-secret")
 
 # 会话保留天数（清理脚本使用）
 THREAD_RETENTION_DAYS = int(os.getenv("THREAD_RETENTION_DAYS", "90"))
