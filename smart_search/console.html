@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智能家政 · 智能搜索控制台</title>
+<style>
+  :root {
+    --bg: #0b1220;
+    --panel: #111a2e;
+    --panel-2: #16213a;
+    --text: #e8eefc;
+    --muted: #8ea0c0;
+    --border: #243250;
+    --accent: #4fd1c5;
+    --accent-2: #6ea8fe;
+    --ok: #34d399;
+    --warn: #fbbf24;
+    --danger: #f87171;
+  }
+  * { box-sizing: border-box; }
+  html, body { min-height: 100%; }
+  body {
+    margin: 0;
+    background: radial-gradient(circle at 10% 0%, #15233e 0, var(--bg) 42%);
+    color: var(--text);
+    font-family: "Microsoft YaHei", "PingFang SC", system-ui, -apple-system, sans-serif;
+  }
+  .app { max-width: 1180px; margin: 0 auto; padding: 24px 24px 80px; }
+
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; padding: 18px 22px; margin-bottom: 22px;
+    background: rgba(17, 26, 46, 0.82); border: 1px solid var(--border);
+    border-radius: 16px; backdrop-filter: blur(8px);
+  }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    width: 46px; height: 46px; border-radius: 14px; display: flex;
+    align-items: center; justify-content: center; font-size: 24px;
+    background: linear-gradient(135deg, rgba(79,209,197,.25), rgba(110,168,254,.25));
+    border: 1px solid rgba(110,168,254,.35);
+  }
+  .title { font-size: 20px; font-weight: 700; letter-spacing: .5px; }
+  .subtitle { margin-top: 4px; font-size: 12px; color: var(--muted); }
+  .status {
+    display: flex; align-items: center; gap: 8px; font-size: 12px;
+    color: var(--muted); padding: 8px 14px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--panel-2);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+  .dot.ok { background: var(--ok); box-shadow: 0 0 10px rgba(52,211,153,.8); }
+  .dot.bad { background: var(--danger); }
+
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 22px; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 16px; padding: 20px;
+  }
+  .panel + .panel { margin-top: 18px; }
+
+  .search-title { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .search-hint { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+  .search-box {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 10px 12px;
+    transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  .search-box:focus-within {
+    border-color: var(--accent-2);
+    box-shadow: 0 0 0 3px rgba(110,168,254,.12);
+  }
+  .search-box input {
+    flex: 1; min-width: 0; background: transparent; border: 0; outline: 0;
+    color: var(--text); font-size: 15px; padding: 8px 4px;
+  }
+  .search-box input::placeholder { color: #63748f; }
+  .btn {
+    border: 0; cursor: pointer; border-radius: 10px; padding: 11px 22px;
+    font-size: 14px; font-weight: 700; color: #06121c;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
+    transition: transform .12s ease, opacity .12s ease;
+    white-space: nowrap;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+
+  .filters { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  .filters input {
+    width: 130px; background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text); padding: 9px 12px; font-size: 12px;
+    outline: 0;
+  }
+  .filters input:focus { border-color: var(--accent-2); }
+
+  .examples { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .chip {
+    cursor: pointer; font-size: 12px; color: var(--muted);
+    padding: 7px 14px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--panel-2);
+    transition: all .12s ease;
+  }
+  .chip:hover { color: var(--text); border-color: var(--accent-2); }
+
+  .answer {
+    display: none; border-left: 4px solid var(--accent);
+    background: linear-gradient(90deg, rgba(79,209,197,.08), transparent 70%);
+    border-radius: 0 12px 12px 0; padding: 16px 18px;
+    font-size: 14px; line-height: 1.8; white-space: pre-wrap;
+  }
+
+  .results { display: grid; gap: 14px; margin-top: 18px; }
+  .card {
+    display: flex; gap: 16px; align-items: flex-start;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px; cursor: pointer;
+    transition: border-color .15s ease, transform .12s ease, background .15s ease;
+  }
+  .card-img {
+    width: 128px; height: 128px; border-radius: 12px; flex-shrink: 0;
+    object-fit: cover; background: #1b2947; border: 1px solid var(--border);
+  }
+  .card-img.placeholder {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 40px; color: #63748f;
+  }
+  .card-body { flex: 1; min-width: 0; }
+  @media (max-width: 620px) {
+    .card { flex-direction: column; }
+    .card-img { width: 100%; height: 180px; }
+  }
+  .card:hover {
+    border-color: var(--accent-2); transform: translateY(-2px);
+    background: #13203a;
+  }
+  .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .card-name { font-size: 17px; font-weight: 700; }
+  .badge {
+    font-size: 11px; padding: 4px 10px; border-radius: 999px;
+    border: 1px solid rgba(110,168,254,.45);
+    color: var(--accent-2); background: rgba(110,168,254,.1);
+    white-space: nowrap;
+  }
+  .badge.hk { color: var(--accent); border-color: rgba(79,209,197,.45); background: rgba(79,209,197,.1); }
+  .card-meta { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 8px; font-size: 13px; color: var(--muted); }
+  .price { color: #ff9a8b; font-weight: 700; font-size: 15px; }
+  .card-desc { margin-top: 10px; font-size: 13px; color: #a9b8d3; line-height: 1.7; }
+  .slots { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .slot {
+    font-size: 11px; padding: 5px 10px; border-radius: 8px;
+    background: rgba(52,211,153,.1); color: #7ee7bb;
+    border: 1px solid rgba(52,211,153,.25);
+  }
+  .reason { margin-top: 12px; font-size: 11px; color: #6f83a3; }
+
+  .empty {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 50px 20px; color: var(--muted); text-align: center;
+  }
+  .empty-icon { font-size: 42px; margin-bottom: 12px; }
+  .empty-title { font-size: 15px; color: var(--text); font-weight: 700; }
+  .empty-desc { margin-top: 8px; font-size: 12px; line-height: 1.7; }
+
+  .side-title { font-size: 13px; font-weight: 700; color: var(--accent-2); margin-bottom: 12px; }
+  .side-item { font-size: 12px; color: var(--muted); line-height: 1.8; padding: 7px 0; border-bottom: 1px dashed rgba(36,50,80,.8); }
+  .side-item:last-child { border-bottom: 0; }
+  .side-item b { color: var(--text); font-weight: 600; }
+  .kbd {
+    display: inline-block; padding: 1px 6px; border-radius: 5px;
+    border: 1px solid var(--border); background: var(--panel-2);
+    font-size: 11px; color: var(--text);
+  }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 40px; transform: translate(-50%, 20px);
+    background: rgba(22,33,58,.96); color: var(--text);
+    border: 1px solid rgba(110,168,254,.45); border-radius: 12px;
+    padding: 12px 22px; font-size: 14px; opacity: 0; pointer-events: none;
+    transition: opacity .2s ease, transform .2s ease; z-index: 999;
+    box-shadow: 0 12px 40px rgba(0,0,0,.45);
+  }
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="logo">✨</div>
+      <div>
+        <div class="title">智能家政 · 智能搜索</div>
+        <div class="subtitle">自然语言描述需求，智能匹配服务、套餐与家政员</div>
+      </div>
+    </div>
+    <div class="status"><span id="statusDot" class="dot"></span><span id="statusText">检查服务中…</span></div>
+  </header>
+
+  <div class="layout">
+    <main>
+      <section class="panel">
+        <div class="search-title">说说你的需求</div>
+        <div class="search-hint">例如“适合养宠物的保洁”“会做饭的阿姨”“深度清洁、除螨”</div>
+        <div class="search-box">
+          <input id="query" type="text" maxlength="200" placeholder="用一句话描述你需要的服务或家政员…" autocomplete="off">
+          <button id="searchBtn" class="btn" onclick="doSearch()">智能匹配</button>
+        </div>
+        <div class="filters">
+          <input id="maxPrice" type="number" min="0" placeholder="最高价格（可选）">
+          <input id="minRating" type="number" min="0" max="5" step="0.1" placeholder="最低评分（可选）">
+          <input id="date" type="date" placeholder="指定日期（可选）">
+        </div>
+        <div class="examples">
+          <span class="chip" onclick="useExample('适合养宠物的保洁')">适合养宠物的保洁</span>
+          <span class="chip" onclick="useExample('会做饭的家政员')">会做饭的家政员</span>
+          <span class="chip" onclick="useExample('家里有老人需要陪护')">老人陪护</span>
+          <span class="chip" onclick="useExample('穹妹')">穹妹</span>
+          <span class="chip" onclick="useExample('深度清洁、除螨')">深度清洁、除螨</span>
+        </div>
+      </section>
+
+      <section id="answer" class="panel answer"></section>
+
+      <div id="results" class="results"></div>
+
+      <div id="empty" class="panel empty">
+        <div class="empty-icon">✨</div>
+        <div class="empty-title">描述需求，智能匹配</div>
+        <div class="empty-desc">输入一句话，或点击上面的示例。结果会以卡片形式展示在这里。</div>
+      </div>
+    </main>
+
+    <aside>
+      <section class="panel">
+        <div class="side-title">搜索说明</div>
+        <div class="side-item"><b>精确名优先</b><br>“穹妹”“吕洞宾”这类库内真实名称会直接命中。</div>
+        <div class="side-item"><b>语义召回</b><br>支持“适合养宠物”“会做饭”这类自然描述。</div>
+        <div class="side-item"><b>真实数据</b><br>价格、上架状态、可约档期以业务库为准。</div>
+        <div class="side-item"><b>可约档期</b><br>默认只展示明天起 3 个自然日。</div>
+        <div class="side-item"><b>快捷操作</b><br>输入框按 <span class="kbd">Enter</span> 直接搜索。</div>
+      </section>
+      <section class="panel">
+        <div class="side-title">当前索引</div>
+        <div class="side-item">服务 / 套餐：<b id="svcCount">-</b> 条</div>
+        <div class="side-item">家政员：<b id="hkCount">-</b> 条</div>
+        <div class="side-item">Qdrant：<b id="qdrantState">-</b></div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<div id="toast" class="toast">尼好，无法过海！</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const queryEl = $('query');
+const searchBtn = $('searchBtn');
+const resultsEl = $('results');
+const answerEl = $('answer');
+const emptyEl = $('empty');
+
+function showToast(message) {
+  const toast = $('toast');
+  toast.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(() => toast.classList.remove('show'), 1800);
+}
+
+function useExample(text) {
+  queryEl.value = text;
+  doSearch();
+}
+
+function setStatus(ok, text) {
+  const dot = $('statusDot');
+  dot.className = 'dot ' + (ok ? 'ok' : 'bad');
+  $('statusText').textContent = text;
+}
+
+async function loadHealth() {
+  try {
+    const res = await fetch('/api/smart-search/health');
+    const data = await res.json();
+    if (data.qdrant) {
+      setStatus(true, '服务正常');
+      $('svcCount').textContent = data.services_points ?? '-';
+      $('hkCount').textContent = data.housekeepers_points ?? '-';
+      $('qdrantState').textContent = '已连接';
+    } else {
+      setStatus(false, 'Qdrant 不可用');
+      $('qdrantState').textContent = '异常';
+    }
+  } catch (err) {
+    setStatus(false, '服务不可用');
+    $('qdrantState').textContent = '未连接';
+  }
+}
+
+function renderResults(data) {
+  resultsEl.innerHTML = '';
+  const results = data.results || [];
+  const answer = (data.answer || '').trim();
+
+  if (answer) {
+    answerEl.style.display = 'block';
+    answerEl.textContent = answer;
+  } else {
+    answerEl.style.display = 'none';
+  }
+
+  if (!results.length) {
+    emptyEl.style.display = 'flex';
+    emptyEl.querySelector('.empty-icon').textContent = '🔍';
+    emptyEl.querySelector('.empty-title').textContent = '没有找到匹配项';
+    emptyEl.querySelector('.empty-desc').textContent = '换个说法试试，或直接在家政预约页查看。';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+
+  results.forEach((item) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.addEventListener('click', () => showToast('尼好，无法过海！'));
+
+    const isHk = item.type === 'housekeeper';
+    const typeLabel = isHk ? '家政员' : (item.type === 'package' ? '套餐' : '服务');
+
+    // 左侧图片：服务/套餐用 image，家政员用 picture；没有就用占位
+    const imgUrl = item.image || item.picture || '';
+    let media;
+    if (imgUrl) {
+      media = document.createElement('img');
+      media.className = 'card-img';
+      media.src = imgUrl;
+      media.alt = item.name || '';
+      media.loading = 'lazy';
+      media.onerror = () => {
+        media.replaceWith(makePlaceholder(isHk));
+      };
+    } else {
+      media = makePlaceholder(isHk);
+    }
+
+    const body = document.createElement('div');
+    body.className = 'card-body';
+
+    const head = document.createElement('div');
+    head.className = 'card-head';
+    const name = document.createElement('div');
+    name.className = 'card-name';
+    name.textContent = item.name || '未命名';
+    const badge = document.createElement('span');
+    badge.className = 'badge' + (isHk ? ' hk' : '');
+    badge.textContent = typeLabel;
+    head.append(name, badge);
+
+    const meta = document.createElement('div');
+    meta.className = 'card-meta';
+    if (Number(item.price) > 0) {
+      const price = document.createElement('span');
+      price.className = 'price';
+      price.textContent = '¥ ' + Number(item.price).toFixed(2) + (isHk ? ' / 次' : '');
+      meta.append(price);
+    }
+    if (isHk && item.rank_text) {
+      const rank = document.createElement('span');
+      rank.textContent = item.rank_text;
+      meta.append(rank);
+    }
+    if (Number(item.rating) > 0) {
+      const rating = document.createElement('span');
+      rating.textContent = '评分 ' + Number(item.rating).toFixed(1);
+      meta.append(rating);
+    }
+    if (isHk && item.position) {
+      const pos = document.createElement('span');
+      pos.textContent = '岗位：' + item.position;
+      meta.append(pos);
+    }
+    if (isHk && item.work_status) {
+      const work = document.createElement('span');
+      work.textContent = item.work_status;
+      meta.append(work);
+    }
+    if (!isHk && item.category) {
+      const cat = document.createElement('span');
+      cat.textContent = item.category;
+      meta.append(cat);
+    }
+
+    body.append(head, meta);
+
+    const description = isHk
+      ? (item.past_experience || item.review || '')
+      : (item.description || '');
+    if (description) {
+      const desc = document.createElement('div');
+      desc.className = 'card-desc';
+      desc.textContent = description;
+      body.append(desc);
+    }
+
+    if (isHk && (item.education || item.health_certificate)) {
+      const extra = document.createElement('div');
+      extra.className = 'card-desc';
+      const parts = [];
+      if (item.education) parts.push('学历：' + item.education);
+      if (item.health_certificate) parts.push('健康证：' + item.health_certificate);
+      extra.textContent = parts.join(' · ');
+      body.append(extra);
+    }
+
+    if (Array.isArray(item.available_slots) && item.available_slots.length) {
+      const slots = document.createElement('div');
+      slots.className = 'slots';
+      item.available_slots.forEach((slot) => {
+        const span = document.createElement('span');
+        span.className = 'slot';
+        span.textContent = slot;
+        slots.append(span);
+      });
+      body.append(slots);
+    } else if (isHk) {
+      const noSlot = document.createElement('div');
+      noSlot.className = 'reason';
+      noSlot.textContent = '暂无可约时段';
+      body.append(noSlot);
+    }
+
+    if (item.reason) {
+      const reason = document.createElement('div');
+      reason.className = 'reason';
+      reason.textContent = item.reason;
+      body.append(reason);
+    }
+
+    card.append(media, body);
+    resultsEl.append(card);
+  });
+}
+
+function makePlaceholder(isHk) {
+  const div = document.createElement('div');
+  div.className = 'card-img placeholder';
+  div.textContent = isHk ? '👤' : '🧹';
+  return div;
+}
+
+async function doSearch() {
+  const query = (queryEl.value || '').trim();
+  if (!query) {
+    showToast('请先描述你的需求');
+    queryEl.focus();
+    return;
+  }
+  if (searchBtn.disabled) return;
+
+  const filters = {};
+  const maxPrice = Number($('maxPrice').value);
+  const minRating = Number($('minRating').value);
+  const date = $('date').value;
+  if (maxPrice > 0) filters.max_price = maxPrice;
+  if (minRating > 0) filters.min_rating = minRating;
+  if (date) filters.date = date;
+
+  searchBtn.disabled = true;
+  searchBtn.textContent = '搜索中…';
+  answerEl.style.display = 'none';
+  resultsEl.innerHTML = '';
+  emptyEl.style.display = 'flex';
+  emptyEl.querySelector('.empty-icon').textContent = '✨';
+  emptyEl.querySelector('.empty-title').textContent = '正在智能匹配…';
+  emptyEl.querySelector('.empty-desc').textContent = '正在检索服务目录和家政员档案';
+
+  try {
+    const res = await fetch('/api/smart-search/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, filters: Object.keys(filters).length ? filters : null })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || data.error || '请求失败');
+    renderResults(data);
+  } catch (err) {
+    answerEl.style.display = 'none';
+    resultsEl.innerHTML = '';
+    emptyEl.style.display = 'flex';
+    emptyEl.querySelector('.empty-icon').textContent = '⚠️';
+    emptyEl.querySelector('.empty-title').textContent = '搜索失败';
+    emptyEl.querySelector('.empty-desc').textContent = err.message || '无法连接智能搜索服务';
+  } finally {
+    searchBtn.disabled = false;
+    searchBtn.textContent = '智能匹配';
+  }
+}
+
+queryEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') doSearch();
+});
+
+loadHealth();
+queryEl.focus();
+</script>
+</body>
+</html>

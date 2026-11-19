@@ -1,0 +1,78 @@
+# Example environment variables for the multi-agent customer service system
+# Copy this file to .env and edit as needed
+
+# ===== SiliconFlow API (OpenAI-compatible) =====
+OPENAI_API_KEY=your_siliconflow_api_key_here
+OPENAI_BASE_URL=https://api.siliconflow.cn/v1
+OPENAI_MODEL=Qwen/Qwen3-8B
+
+# ===== Thinking mode =====
+# disabled: 关闭思考，客服场景响应更快（推荐）
+# enabled:  开启思考
+# default:  使用服务商默认行为
+OPENAI_THINKING=disabled
+
+# ===== HTTP client =====
+HTTP_TIMEOUT=30
+HTTP_MAX_RETRIES=3
+
+# ===== Complex path (Plan-and-Execute / ReAct) =====
+COMPLEX_PATH_ENABLED=true
+MAX_PLAN_STEPS=4
+MAX_TOTAL_STEPS=5
+MAX_REPLANS=1
+REACT_RECURSION_LIMIT=8
+MAX_STEP_RESULT_CHARS=2000
+# auto: probe native tool calling on first complex request; on: force; off: deterministic only
+REACT_NATIVE_TOOLS=auto
+CLASSIFIER_JSON_RETRIES=1
+PLANNER_JSON_RETRIES=2
+LANGGRAPH_STREAM_READ_TIMEOUT=300
+
+# ===== Dialogue summary compression =====
+# Compress older turns into a structured summary; keep the latest N messages verbatim.
+DIALOGUE_COMPRESS_ENABLED=true
+DIALOGUE_KEEP_MESSAGES=12
+
+# ===== Memory backend (FastAPI + PostgresSaver + Redis cache) =====
+# Postgres: LangGraph checkpointer + user_profile + thread_meta
+POSTGRES_URI=postgresql://langgraph:langgraph@localhost:5432/langgraph
+# Redis: cache only (user profile / session list), not persistence
+REDIS_URL=redis://localhost:6379/0
+# Must match Java application.yml smart.jwt.user-secret-key
+USER_JWT_SECRET=change-me-secret
+PROFILE_CACHE_TTL=1800
+SESSION_CACHE_TTL=60
+THREAD_RETENTION_DAYS=90
+
+# ===== MySQL (Java backend business database) =====
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=root
+MYSQL_PASSWORD=change-me-password
+MYSQL_DATABASE=smart_housekeeping_system
+
+# ===== Logging =====
+LOG_LEVEL=INFO
+
+# ===== Notes =====
+
+# 1. API key
+# Sign up at https://api.siliconflow.cn and create an API key
+
+# 2. Model choice
+# Examples:
+# - Qwen/QwQ-32B (recommended, strongest)
+# - Qwen/Qwen3-8B (good cost/performance)
+# - Qwen/Qwen3-14B (better quality)
+# - Qwen/Qwen3-32B (highest quality)
+# - Qwen/Qwen2.5-7B (lightweight)
+# - Qwen/Qwen2.5-14B (balanced)
+
+# 3. Optional overrides
+# To change timeout or retries, edit e.g.:
+# HTTP_TIMEOUT=60
+# HTTP_MAX_RETRIES=5
+
+# Windows: if `langgraph dev` fails loading .env with UnicodeDecodeError, keep comments
+# ASCII-only (as here) or save .env as UTF-8 with BOM.
